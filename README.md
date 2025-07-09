@@ -1,6 +1,6 @@
 🧮 YouthSync: Youth Program Attendance & Engagement Dashboard
 
-![Image](example/YouthSync.png)
+![Image](example/youthsync.png)
 
 
 ![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)
