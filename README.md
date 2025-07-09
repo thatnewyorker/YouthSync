@@ -3,8 +3,9 @@
 ![Image](example/youthsync.png)
 
 
-![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)
-![HTML](https://img.shields.io/badge/HTML-gray?logo=html5)
+![Rust](https://img.shields.io/badge/Rust-1.88.0-orange?logo=rust)
+![Static Badge](https://img.shields.io/badge/React-%2333302E?logo=react&logoColor=%2361DAFB)
+
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 
