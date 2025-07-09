@@ -1,9 +1,14 @@
 🧮 YouthSync: Youth Program Attendance & Engagement Dashboard
 
+![Image](example/YouthSync.png)
+
+
 ![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)
 ![HTML](https://img.shields.io/badge/HTML-gray?logo=html5)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
+
+
 
 Streamline attendance tracking and engagement analysis for youth programs with YouthSync, a web-based dashboard designed for community organizations.
 
@@ -19,7 +24,7 @@ This project was created to showcase my technical skills and problem-solving abi
 
 
 
-📦 Features
+Features:
 
 
 
@@ -44,50 +49,23 @@ This project was created to showcase my technical skills and problem-solving abi
 🦀 Built in Rust for performance, React for UI
 
 
-
-📐 Example Inputs
-
+Example Inputs:
 
 
+➡️ Parameter
 
+➡️ Value
 
+```bash
+Student ID:
+0293820
 
-
-Parameter
-
-
-
-Value
-
-
-
-
-
-Student ID
-
-
-
-1
-
-
-
-
-
-Date
-
-
-
+Date:
 07-08-2025
 
-
-
-
-
-Status
-
-
-
+Status:
 Present
+```
 
 ➡️ Outputs:
 
@@ -108,27 +86,32 @@ Exported CSV report
 
 
 🛠️ Installation
-
+```bash
 git clone https://github.com/thatnewyorker/YouthSync
 cd YouthSync
 cargo build --release
-
+```
 
 
 🧪 Usage
-
+```bash
 cargo run --release
+```
 
 
 
 
+Navigate to the frontend folder: 
+```bash
+cd frontend
+```
 
-Navigate to the frontend folder: cd frontend
 
 
-
-Serve the frontend: python3 -m http.server 3000
-
+Serve the frontend: 
+```bash
+python3 -m http.server 3000
+```
 
 
 Open http://localhost:3000 in your browser.
@@ -197,7 +180,7 @@ Gerard Cruzado
 Created to showcase skills for youth program opportunities
 Built with 💻 Rust + 🌐 React
 
-🔧 Example
+📝 TL;DR
 
 cargo run --release
 
