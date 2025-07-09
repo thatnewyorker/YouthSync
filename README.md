@@ -181,12 +181,12 @@ Created to showcase skills for youth program opportunities
 Built with 💻 Rust + 🌐 React
 
 📝 TL;DR
-
+```bash
 cargo run --release
-
+```
 This will start the backend server. Then, in another terminal:
-
+```bash
 cd frontend
 python3 -m http.server 3000
-
+```
 Access http://localhost:3000 to use the dashboard.
