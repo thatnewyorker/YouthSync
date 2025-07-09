@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>YouthSync Dashboard</title>
+        <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.9/babel.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body>
+        <div id="root" class="container mx-auto p-4"></div>
+        <script type="text/babel">
+            const { useState, useEffect, useRef } = React;
+
+            class ErrorBoundary extends React.Component {
+                state = { error: null };
+                static getDerivedStateFromError(error) {
+                    return { error };
+                }
+                render() {
+                    if (this.state.error) {
+                        return (
+                            <div className="text-red-500 text-center">
+                                Error: {this.state.error.message}
+                            </div>
+                        );
+                    }
+                    return this.props.children;
+                }
+            }
+
+            const App = () => {
+                const [studentId, setStudentId] = useState("");
+                const [date, setDate] = useState("");
+                const [status, setStatus] = useState("Present");
+                const [report, setReport] = useState([]);
+                const [message, setMessage] = useState("");
+                const chartRef = useRef(null);
+                const chartInstance = useRef(null);
+
+                const fetchReport = async () => {
+                    try {
+                        const response = await axios.get(
+                            "http://localhost:8080/report",
+                        );
+                        setReport(response.data);
+                    } catch (error) {
+                        setMessage("Error fetching report: " + error.message);
+                        console.error("Fetch error:", error);
+                    }
+                };
+
+                useEffect(() => {
+                    fetchReport();
+                }, []);
+
+                useEffect(() => {
+                    if (report.length > 0 && chartRef.current) {
+                        if (chartInstance.current) {
+                            chartInstance.current.destroy();
+                        }
+                        const ctx = chartRef.current.getContext("2d");
+                        chartInstance.current = new Chart(ctx, {
+                            type: "bar",
+                            data: {
+                                labels: report.map((r) => r.week),
+                                datasets: [
+                                    {
+                                        label: "Students Present",
+                                        data: report.map(
+                                            (r) => r.present_count,
+                                        ),
+                                        backgroundColor: "#4e79a7",
+                                        borderColor: "#2f4b7c",
+                                        borderWidth: 1,
+                                    },
+                                ],
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: "Students",
+                                        },
+                                    },
+                                    x: {
+                                        title: { display: true, text: "Week" },
+                                    },
+                                },
+                                plugins: {
+                                    legend: { display: true },
+                                    title: {
+                                        display: true,
+                                        text: "Weekly Attendance",
+                                    },
+                                },
+                            },
+                        });
+                    }
+                }, [report]);
+
+                const handleSubmit = async (e) => {
+                    e.preventDefault();
+                    try {
+                        await axios.post("http://localhost:8080/attendance", {
+                            student_id: parseInt(studentId),
+                            date,
+                            status,
+                        });
+                        setMessage("Attendance recorded!");
+                        setStudentId("");
+                        setDate("");
+                        fetchReport();
+                    } catch (error) {
+                        setMessage(
+                            "Error recording attendance: " + error.message,
+                        );
+                        console.error("Submit error:", error);
+                    }
+                };
+
+                const handleExport = async () => {
+                    try {
+                        const response = await axios.get(
+                            "http://localhost:8080/export",
+                            { responseType: "blob" },
+                        );
+                        const url = window.URL.createObjectURL(
+                            new Blob([response.data]),
+                        );
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.setAttribute("download", "attendance_report.csv");
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } catch (error) {
+                        setMessage("Error exporting CSV: " + error.message);
+                        console.error("Export error:", error);
+                    }
+                };
+
+                return (
+                    <ErrorBoundary>
+                        <div className="space-y-6">
+                            <h1 className="text-3xl font-bold text-center">
+                                YouthSync Dashboard
+                            </h1>
+                            {message && (
+                                <p className="text-center text-red-500">
+                                    {message}
+                                </p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-4 bg-gray-100 rounded-lg shadow">
+                                    <h2 className="text-xl font-semibold mb-4">
+                                        Add Attendance
+                                    </h2>
+                                    <form
+                                        onSubmit={handleSubmit}
+                                        className="space-y-4"
+                                    >
+                                        <div>
+                                            <label className="block text-sm font-medium">
+                                                Student ID
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={studentId}
+                                                onChange={(e) =>
+                                                    setStudentId(e.target.value)
+                                                }
+                                                className="mt-1 p-2 w-full border rounded"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium">
+                                                Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={date}
+                                                onChange={(e) =>
+                                                    setDate(e.target.value)
+                                                }
+                                                className="mt-1 p-2 w-full border rounded"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium">
+                                                Status
+                                            </label>
+                                            <select
+                                                value={status}
+                                                onChange={(e) =>
+                                                    setStatus(e.target.value)
+                                                }
+                                                className="mt-1 p-2 w-full border rounded"
+                                            >
+                                                <option value="Present">
+                                                    Present
+                                                </option>
+                                                <option value="Absent">
+                                                    Absent
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+                                        >
+                                            Record Attendance
+                                        </button>
+                                    </form>
+                                </div>
+                                <div className="p-4 bg-gray-100 rounded-lg shadow">
+                                    <h2 className="text-xl font-semibold mb-4">
+                                        Weekly Attendance
+                                    </h2>
+                                    {report.length === 0 ? (
+                                        <p className="text-center">
+                                            No data available. Add attendance to
+                                            see the chart.
+                                        </p>
+                                    ) : (
+                                        <canvas
+                                            id="attendanceChart"
+                                            ref={chartRef}
+                                            className="w-full"
+                                        ></canvas>
+                                    )}
+                                    <button
+                                        onClick={handleExport}
+                                        className="mt-4 w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+                                    >
+                                        Export CSV Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </ErrorBoundary>
+                );
+            };
+
+            const root = ReactDOM.createRoot(document.getElementById("root"));
+            root.render(<App />);
+        </script>
+    </body>
+</html>

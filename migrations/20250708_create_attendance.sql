@@ -1,0 +1,6 @@
+CREATE TABLE attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    status TEXT NOT NULL
+);
