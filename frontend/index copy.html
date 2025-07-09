@@ -1,9 +1,7 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <!-- Character encoding -->
         <meta charset="UTF-8" />
-        <!-- Viewport meta tag for responsive design -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>YouthSync Dashboard</title>
         <!-- React and ReactDOM for UI rendering -->
@@ -52,12 +50,12 @@
                 const [studentId, setStudentId] = useState("");
                 const [date, setDate] = useState("");
                 const [status, setStatus] = useState("Present");
-                const [report, setReport] = useState([]); // Daily attendance data
+                const [report, setReport] = useState([]); // Weekly attendance data
                 const [message, setMessage] = useState(""); // User feedback messages
                 const chartRef = useRef(null); // Reference to canvas element for Chart.js
                 const chartInstance = useRef(null); // Store Chart.js instance for cleanup
 
-                // Fetch daily attendance report from backend API
+                // Fetch weekly attendance report from backend API
                 const fetchReport = async () => {
                     try {
                         const response = await axios.get(
@@ -83,11 +81,11 @@
                             chartInstance.current.destroy();
                         }
                         const ctx = chartRef.current.getContext("2d");
-                        // Create new Chart.js bar chart with daily attendance data
+                        // Create new Chart.js bar chart with weekly attendance data
                         chartInstance.current = new Chart(ctx, {
                             type: "bar",
                             data: {
-                                labels: report.map((r) => r.date), // Use date (mm-dd-yyyy)
+                                labels: report.map((r) => r.week),
                                 datasets: [
                                     {
                                         label: "Students Present",
@@ -96,13 +94,6 @@
                                         ),
                                         backgroundColor: "#4e79a7",
                                         borderColor: "#2f4b7c",
-                                        borderWidth: 1,
-                                    },
-                                    {
-                                        label: "Students Absent",
-                                        data: report.map((r) => r.absent_count),
-                                        backgroundColor: "#f28c82",
-                                        borderColor: "#dc7067",
                                         borderWidth: 1,
                                     },
                                 ],
@@ -117,14 +108,14 @@
                                         },
                                     },
                                     x: {
-                                        title: { display: true, text: "Date" }, // Updated from "Week"
+                                        title: { display: true, text: "Week" },
                                     },
                                 },
                                 plugins: {
                                     legend: { display: true },
                                     title: {
                                         display: true,
-                                        text: "Daily Attendance", // Updated from "Weekly Attendance"
+                                        text: "Daily Attendance",
                                     },
                                 },
                             },
@@ -255,10 +246,10 @@
                                         </button>
                                     </form>
                                 </div>
-                                {/* Daily attendance chart and export button */}
+                                {/* Weekly attendance chart and export button */}
                                 <div className="p-4 bg-gray-100 rounded-lg shadow">
                                     <h2 className="text-xl font-semibold mb-4">
-                                        Daily Attendance
+                                        Weekly Attendance
                                     </h2>
                                     {report.length === 0 ? (
                                         // Show message if no data is available

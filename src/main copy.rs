@@ -1,10 +1,11 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
-use chrono::{Datelike, NaiveDate};
-use csv::Writer;
-use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool};
+use chrono::{Datelike, NaiveDate}; // For date parsing and manipulation
+use csv::Writer; // For CSV export
+use serde::{Deserialize, Serialize}; // Serialization support
+use sqlx::{FromRow, SqlitePool}; // Async SQLX ORM
 
+// Define a struct for attendance record in database
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 struct Attendance {
     student_id: i32,
@@ -12,18 +13,20 @@ struct Attendance {
     status: String, // "Present" or "Absent"
 }
 
+// Define response structure for weekly report
 #[derive(Debug, Serialize)]
-struct DailyReport {
-    date: String, // Format: mm-dd-yyyy
+struct WeeklyReport {
+    week: String,
     present_count: i32,
-    absent_count: i32,
 }
 
+/// Root endpoint handler, return API info
 async fn index() -> impl Responder {
     HttpResponse::Ok()
         .body("YouthSync API: Use /attendance (POST), /report (GET), or /export (GET)")
 }
 
+/// Handler for adding attendance records
 async fn add_attendance(
     data: web::Json<Attendance>,
     pool: web::Data<SqlitePool>,
@@ -41,6 +44,7 @@ async fn add_attendance(
     }
 }
 
+/// Handler to generate weekly attendance report
 async fn get_report(pool: web::Data<SqlitePool>) -> impl Responder {
     let records = sqlx::query_as::<_, Attendance>("SELECT * FROM attendance")
         .fetch_all(pool.get_ref())
@@ -48,38 +52,45 @@ async fn get_report(pool: web::Data<SqlitePool>) -> impl Responder {
 
     match records {
         Ok(records) => {
-            let mut daily_counts: Vec<DailyReport> = vec![];
+            let mut weekly_counts: Vec<WeeklyReport> = vec![];
             for record in records {
+                // Parse date string to NaiveDate
                 let date = match NaiveDate::parse_from_str(&record.date, "%Y-%m-%d") {
                     Ok(date) => date,
-                    Err(e) => {
-                        return HttpResponse::InternalServerError()
-                            .body(format!("Date parse error: {}", e));
-                    }
+                    Err(_) => continue, // Skip malformed dates silently or log error
                 };
-                let formatted_date =
-                    format!("{:02}-{:02}-{}", date.month(), date.day(), date.year());
-                let entry = daily_counts.iter_mut().find(|r| r.date == formatted_date);
-                if let Some(report) = entry {
-                    match record.status.as_str() {
-                        "Present" => report.present_count += 1,
-                        "Absent" => report.absent_count += 1,
-                        _ => (), // Ignore invalid statuses
+
+                // let week_key = format!("{}-W{:03}", iso_week.year(), iso_week.week());
+
+                // Generate date in the format "MM/DD/YYYY"
+                let week_key = format!("{:02}/{:02}/{}", date.month(), date.day(), date.year());
+
+                // Aggregate presence count
+                let existing_entry = weekly_counts
+                    .iter_mut()
+                    .find(|entry| entry.week == week_key);
+
+                match existing_entry {
+                    Some(entry) => {
+                        if record.status == "Present" {
+                            entry.present_count += 1;
+                        }
                     }
-                } else {
-                    daily_counts.push(DailyReport {
-                        date: formatted_date,
-                        present_count: if record.status == "Present" { 1 } else { 0 },
-                        absent_count: if record.status == "Absent" { 1 } else { 0 },
-                    });
+                    None => {
+                        weekly_counts.push(WeeklyReport {
+                            week: week_key,
+                            present_count: if record.status == "Present" { 1 } else { 0 },
+                        });
+                    }
                 }
             }
-            HttpResponse::Ok().json(daily_counts)
+            HttpResponse::Ok().json(weekly_counts)
         }
         Err(e) => HttpResponse::InternalServerError().body(format!("Error: {}", e)),
     }
 }
 
+/// Endpoint to export attendance as CSV
 async fn export_csv(pool: web::Data<SqlitePool>) -> impl Responder {
     let records = sqlx::query_as::<_, Attendance>("SELECT * FROM attendance")
         .fetch_all(pool.get_ref())
@@ -87,8 +98,10 @@ async fn export_csv(pool: web::Data<SqlitePool>) -> impl Responder {
 
     match records {
         Ok(records) => {
+            // Setup CSV writer
             let mut wtr = Writer::from_writer(vec![]);
             wtr.write_record(["Student ID", "Date", "Status"]).unwrap();
+
             for record in records {
                 wtr.write_record(&[record.student_id.to_string(), record.date, record.status])
                     .unwrap();
@@ -105,6 +118,7 @@ async fn export_csv(pool: web::Data<SqlitePool>) -> impl Responder {
 async fn main() -> std::io::Result<()> {
     println!("Current directory: {:?}", std::env::current_dir());
 
+    // Create and connect to SQLite database
     let pool = match sqlx::sqlite::SqlitePoolOptions::new()
         .connect_with(
             sqlx::sqlite::SqliteConnectOptions::new()
@@ -123,6 +137,7 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // Run migrations if necessary
     if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
         eprintln!("Failed to run migrations: {}", e);
         return Err(std::io::Error::new(
@@ -131,9 +146,10 @@ async fn main() -> std::io::Result<()> {
         ));
     }
 
+    // Start HTTP server
     HttpServer::new(move || {
         App::new()
-            .wrap(Cors::permissive())
+            .wrap(Cors::permissive()) // Allow all origins for simplicity
             .app_data(web::Data::new(pool.clone()))
             .route("/", web::get().to(index))
             .route("/attendance", web::post().to(add_attendance))
