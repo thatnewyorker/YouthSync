@@ -4,66 +4,84 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>YouthSync Dashboard</title>
+        <!-- React and ReactDOM for UI rendering -->
         <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"></script>
+        <!-- Babel for in-browser JSX transpilation -->
         <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.9/babel.min.js"></script>
+        <!-- Axios for HTTP requests -->
         <script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js"></script>
+        <!-- Chart.js for data visualization -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+        <!-- Tailwind CSS for utility-first styling -->
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body>
+        <!-- Root div for React rendering -->
         <div id="root" class="container mx-auto p-4"></div>
         <script type="text/babel">
+            // Import React hooks for state and lifecycle management
             const { useState, useEffect, useRef } = React;
 
+            // ErrorBoundary component catches rendering errors in child components
             class ErrorBoundary extends React.Component {
                 state = { error: null };
                 static getDerivedStateFromError(error) {
+                    // Update state so next render shows fallback UI
                     return { error };
                 }
                 render() {
                     if (this.state.error) {
+                        // Display error message if an error occurred
                         return (
                             <div className="text-red-500 text-center">
                                 Error: {this.state.error.message}
                             </div>
                         );
                     }
+                    // Otherwise, render children as normal
                     return this.props.children;
                 }
             }
 
+            // Main application component
             const App = () => {
+                // State variables for form inputs and UI state
                 const [studentId, setStudentId] = useState("");
                 const [date, setDate] = useState("");
                 const [status, setStatus] = useState("Present");
-                const [report, setReport] = useState([]);
-                const [message, setMessage] = useState("");
-                const chartRef = useRef(null);
-                const chartInstance = useRef(null);
+                const [report, setReport] = useState([]); // Weekly attendance data
+                const [message, setMessage] = useState(""); // User feedback messages
+                const chartRef = useRef(null); // Reference to canvas element for Chart.js
+                const chartInstance = useRef(null); // Store Chart.js instance for cleanup
 
+                // Fetch weekly attendance report from backend API
                 const fetchReport = async () => {
                     try {
                         const response = await axios.get(
                             "http://localhost:8080/report",
                         );
-                        setReport(response.data);
+                        setReport(response.data); // Update report state with fetched data
                     } catch (error) {
                         setMessage("Error fetching report: " + error.message);
                         console.error("Fetch error:", error);
                     }
                 };
 
+                // On component mount, fetch the initial report data
                 useEffect(() => {
                     fetchReport();
                 }, []);
 
+                // Whenever the report data changes, (re)draw the Chart.js bar chart
                 useEffect(() => {
                     if (report.length > 0 && chartRef.current) {
+                        // Destroy previous chart instance to avoid memory leaks
                         if (chartInstance.current) {
                             chartInstance.current.destroy();
                         }
                         const ctx = chartRef.current.getContext("2d");
+                        // Create new Chart.js bar chart with weekly attendance data
                         chartInstance.current = new Chart(ctx, {
                             type: "bar",
                             data: {
@@ -105,9 +123,11 @@
                     }
                 }, [report]);
 
+                // Handle attendance form submission
                 const handleSubmit = async (e) => {
-                    e.preventDefault();
+                    e.preventDefault(); // Prevent default form submission
                     try {
+                        // Send attendance data to backend API
                         await axios.post("http://localhost:8080/attendance", {
                             student_id: parseInt(studentId),
                             date,
@@ -116,7 +136,7 @@
                         setMessage("Attendance recorded!");
                         setStudentId("");
                         setDate("");
-                        fetchReport();
+                        fetchReport(); // Refresh report after new attendance is added
                     } catch (error) {
                         setMessage(
                             "Error recording attendance: " + error.message,
@@ -125,12 +145,14 @@
                     }
                 };
 
+                // Handle CSV export: fetch CSV from backend and trigger browser download
                 const handleExport = async () => {
                     try {
                         const response = await axios.get(
                             "http://localhost:8080/export",
-                            { responseType: "blob" },
+                            { responseType: "blob" }, // Expect binary data
                         );
+                        // Create a temporary download link for the CSV blob
                         const url = window.URL.createObjectURL(
                             new Blob([response.data]),
                         );
@@ -146,18 +168,21 @@
                     }
                 };
 
+                // Render the dashboard UI
                 return (
                     <ErrorBoundary>
                         <div className="space-y-6">
                             <h1 className="text-3xl font-bold text-center">
                                 YouthSync Dashboard
                             </h1>
+                            {/* Display feedback or error messages */}
                             {message && (
                                 <p className="text-center text-red-500">
                                     {message}
                                 </p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Attendance input form */}
                                 <div className="p-4 bg-gray-100 rounded-lg shadow">
                                     <h2 className="text-xl font-semibold mb-4">
                                         Add Attendance
@@ -221,16 +246,19 @@
                                         </button>
                                     </form>
                                 </div>
+                                {/* Weekly attendance chart and export button */}
                                 <div className="p-4 bg-gray-100 rounded-lg shadow">
                                     <h2 className="text-xl font-semibold mb-4">
                                         Weekly Attendance
                                     </h2>
                                     {report.length === 0 ? (
+                                        // Show message if no data is available
                                         <p className="text-center">
                                             No data available. Add attendance to
                                             see the chart.
                                         </p>
                                     ) : (
+                                        // Chart.js canvas for attendance visualization
                                         <canvas
                                             id="attendanceChart"
                                             ref={chartRef}
@@ -250,6 +278,7 @@
                 );
             };
 
+            // Mount the App component to the root div
             const root = ReactDOM.createRoot(document.getElementById("root"));
             root.render(<App />);
         </script>
