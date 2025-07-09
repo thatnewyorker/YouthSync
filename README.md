@@ -19,7 +19,7 @@ This tool helps program coordinators monitor daily attendance, generate complian
 
 🚀 Why This Exists
 
-Managing attendance for youth programs can be time-consuming and error-prone. YouthSync provides a lightweight, open-source solution to automate tracking, visualize trends, and export data, making it valuable for organizations like the YMCA or similar groups.
+Managing attendance for youth programs can be time-consuming and error-prone. YouthSync provides a lightweight, open-source solution to automate tracking, visualize trends, and export data, making it valuable for youth focused programs.
 
 This project was created to showcase my technical skills and problem-solving abilities for potential employers in the youth program sector.
 
